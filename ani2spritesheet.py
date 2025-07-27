@@ -1,6 +1,7 @@
-from PIL import Image
 import io,os,sys
 import logging
+from wand.image import Image
+from wand.color import Color
 
 logging.basicConfig(format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s',level=logging.INFO)
 
@@ -47,24 +48,63 @@ def analyzeANIFile(filePath):
         return {"code":0,"msg":frameList,"frameRate":frameRate}
 
 if __name__ == '__main__':
-    OUTPUT_SIZE = (48,48)
     if len(sys.argv) < 2:
-        logging.fatal("Usage:python ani2spritesheet.py <inputFile> <outputFile,Option>")
+        logging.fatal("Usage: python ani2spritesheet.py <inputFileOrDir> <outputFileOrDir,Option>")
     else:
-        res = analyzeANIFile(sys.argv[1])
-        GIFframes = []
-        if res["code"] == 0:
-            logging.info('ANI文件分析完成，帧提取完成！')
-            output = Image.new("RGBA", (OUTPUT_SIZE[0], OUTPUT_SIZE[1] * len(res["msg"])))
-            for frameIndex in range(len(res["msg"])):
-                frameImage = Image.open(io.BytesIO(res["msg"][frameIndex]),formats=['cur']).convert('RGBA')
-                extracted_frame = frameImage.resize(OUTPUT_SIZE)
-                position = (0, OUTPUT_SIZE[0] * frameIndex)
-                output.paste(extracted_frame, position)
-            if(len(sys.argv) >= 3):
-                output.save(sys.argv[2],format="PNG")
+        inputPath = sys.argv[1]
+        outputPath = sys.argv[2] if len(sys.argv) > 2 else inputPath 
+
+        if os.path.isdir(inputPath):
+            if not os.path.exists(outputPath):
+                os.makedirs(outputPath) 
+            for filename in os.listdir(inputPath):
+                logging.info(f'Processing {filename}…')
+                if filename.lower().endswith('.ani'):
+                    filePath = os.path.join(inputPath, filename)
+                    res = analyzeANIFile(filePath)
+                    
+                    if res["code"] == 0:
+                        logging.info(f'ANIfile {filename} analyse completed, return success！')
+
+                        # Open first frame to get actual size
+                        with Image(file=io.BytesIO(res["msg"][0]), format='cur') as first_img:
+                            sprite_width = first_img.width
+                            sprite_height = first_img.height
+
+                        frame_count = len(res["msg"])
+                        logging.info(f'Frame size: {sprite_width}x{sprite_height}, Frame count: {frame_count}')
+                        canvas_height = sprite_height * frame_count
+                        spritesheet = Image(width=sprite_width, height=canvas_height, background=Color("transparent"))
+
+                        for index, frame_bytes in enumerate(res["msg"]):
+                            with Image(file=io.BytesIO(frame_bytes), format='cur') as img:
+                                with Image(image=img.sequence[0]) as frame_img:
+                                    top = index * sprite_height
+                                    spritesheet.composite(frame_img, left=0, top=top)
+
+                        outputFilePath = f"{outputPath}/{filename.strip('.ani')}.png"
+                        spritesheet.save(filename=outputFilePath)                    
+                        logging.info(f'SpriteSheet saved to {outputFilePath}！')           
+                    else:
+                        logging.fatal(res["msg"])
+        
+        elif os.path.isfile(inputPath):
+            logging.info(f'Processing {outputPath}…')
+            res = analyzeANIFile(inputPath)
+            
+            if res["code"] == 0:
+                logging.info(f'ANIfile {outputPath} analyse completed, return success！')
+                with Image(file=io.BytesIO(res["msg"][0]), format='cur') as img:
+                    logging.info(f'Frame size: {img.width}x{img.height}')
+                    if os.path.isdir(outputPath):
+                        outputFilePath = os.path.join(outputPath, f"{os.path.basename(inputPath).strip('.ani')}.png")
+                    else:
+                        outputFilePath = f"{outputPath.strip('.png')}.png"
+                    img.save(filename=outputFilePath)
+                    
+                logging.info(f'SpriteSheet saved to {outputFilePath}！')   
             else:
-                output.save(f"{sys.argv[1].strip('.ani')}.png",format="PNG")
-            logging.info('SpriteSheet生成完成！')
+                logging.fatal(res["msg"])
+        
         else:
-            logging.fatal(res["msg"])
+            logging.fatal("Invalid input path!")

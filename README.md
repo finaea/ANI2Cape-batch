@@ -1,24 +1,29 @@
-# ANI2Cape
-A tool that can convert Windows Animated Cursors (*.ani) to GIF/Pillow Images/Cape format
+# Fork
 
-一个可以将ANI格式文件转化为GIF格式、抽帧转为Pillow Images格式，转为Linux/MacOS可用的指针格式的工具~
+This fork made a few enhancements:
+- Allow batch processing for converting ANI to SpriteSheet
+- Resolve non-transparent spritesheet output
+- Removed fixed Output Size
+- Log frame size and count
+
+# Requirements
+
+This fork changed Pillow library to ImageMagick:
+1. Install ImageMagick by following the guide https://docs.wand-py.org/en/latest/guide/install.html and setup env variable for `$MAGICK_HOME`.
+2. Run `pip install Wand`
+
+
+# ANI2Cape
+
+A tool that can convert Windows Animated Cursors (*.ani) to GIF/Pillow Images/Cape format
 
 - [x] ANI2Pillow Image
 - [x] ANI2GIF(ANI2Pillow Image + Pillow Image2GIF)
-- [x] ANI2SpriteSheet(ANI2Pillow Image + Pillow Image2SpriteSheet)
 - [x] GIF2SpriteSheet(GIF2Pillow Image + Pillow Image2SpriteSheet)
 - [x] ANI2Cape
 
-# Usage
 `Usage:python XXX.py <inputFile> <outputFile,Option>`
 
-inputFile:需要转化的文件路径。
+- [x] ANI2SpriteSheet(GIF2Pillow Image + Pillow Image2SpriteSheet)
 
-outputFile：输出的文件路径。默认为<输入文件名>.xxx
-
-# Document
-[从Windows动态指针到MacOS动态指针——ANI2GIF](https://www.bilibili.com/read/cv20591812)
-
-[从Windows动态指针到MacOS动态指针—— 在MacOS上制作指针](https://www.bilibili.com/read/cv20591812)
-
-[从Windows动态指针到MacOS动态指针—— 在Windows上制作指针]()
+`Usage:python XXX.py <inputFilOrDir> <outputFileOrDir,Option>`
